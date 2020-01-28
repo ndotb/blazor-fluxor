@@ -17,6 +17,7 @@ namespace Blazor.Fluxor
 		/// <see cref="IStore.Initialized"/>
 		public Task Initialized => InitializedCompletionSource.Task;
 
+		private readonly object SyncRoot = new object();
 		private IStoreInitializationStrategy StoreInitializationStrategy;
 		private readonly Dictionary<string, IFeature> FeaturesByName = new Dictionary<string, IFeature>(StringComparer.InvariantCultureIgnoreCase);
 		private readonly List<IEffect> Effects = new List<IEffect>();
@@ -25,8 +26,9 @@ namespace Blazor.Fluxor
 		private readonly Queue<object> QueuedActions = new Queue<object>();
 		private readonly TaskCompletionSource<bool> InitializedCompletionSource = new TaskCompletionSource<bool>();
 
-		private int BeginMiddlewareChangeCount;
-		private bool HasActivatedStore;
+		private volatile bool IsDispatching;
+		private volatile int BeginMiddlewareChangeCount;
+		private volatile bool HasActivatedStore;
 		private bool IsInsideMiddlewareChange => BeginMiddlewareChangeCount > 0;
 		private Action<IFeature, object> IFeatureReceiveDispatchNotificationFromStore;
 
@@ -53,7 +55,10 @@ namespace Blazor.Fluxor
 			if (feature == null)
 				throw new ArgumentNullException(nameof(feature));
 
-			FeaturesByName.Add(feature.GetName(), feature);
+			lock (SyncRoot)
+			{
+				FeaturesByName.Add(feature.GetName(), feature);
+			}
 		}
 
 		/// <see cref="IDispatcher.Dispatch(object)"/>
@@ -62,32 +67,32 @@ namespace Blazor.Fluxor
 			if (action == null)
 				throw new ArgumentNullException(nameof(action));
 
-			// Do not allow task dispatching inside a middleware-change.
-			// These change cycles are for things like "jump to state" in Redux Dev Tools
-			// and should be short lived.
-			// We avoid dispatching inside a middleware change because we don't want UI events (like component Init)
-			// that trigger actions (such as fetching data from a server) to execute
-			if (IsInsideMiddlewareChange)
-				return;
+			lock (SyncRoot)
+			{
+				// Do not allow task dispatching inside a middleware-change.
+				// These change cycles are for things like "jump to state" in Redux Dev Tools
+				// and should be short lived.
+				// We avoid dispatching inside a middleware change because we don't want UI events (like component Init)
+				// that trigger actions (such as fetching data from a server) to execute
+				if (IsInsideMiddlewareChange)
+					return;
 
-			// If there was already an action in the Queue then an action dispatch is already in progress, so we will just
-			// let this new action be added to the queue and then exit
-			// Note: This is to cater for the following scenario
-			//	1: An action is dispatched
-			//	2: An effect is triggered
-			//	3: The effect immediately dispatches a new action
-			// The Queue ensures it is processed after its triggering action has completed rather than immediately
-			bool wasAlreadyDispatching = QueuedActions.Any();
-			QueuedActions.Enqueue(action);
-			if (wasAlreadyDispatching)
-				return;
+				// If a dequeue is already in progress, we will just
+				// let this new action be added to the queue and then exit
+				// Note: This is to cater for the following scenario
+				//	1: An action is dispatched
+				//	2: An effect is triggered
+				//	3: The effect immediately dispatches a new action
+				// The Queue ensures it is processed after its triggering action has completed rather than immediately
+				QueuedActions.Enqueue(action);
 
-			// HasActivatedStore is set to true when the page finishes loading
-			// At which point DequeueActions will be called
-			if (!HasActivatedStore)
-				return;
+				// HasActivatedStore is set to true when the page finishes loading
+				// At which point DequeueActions will be called
+				if (!HasActivatedStore)
+					return;
 
-			DequeueActions();
+				DequeueActions();
+			}
 		}
 
 		/// <see cref="IStore.AddEffect(IEffect)"/>
@@ -95,36 +100,42 @@ namespace Blazor.Fluxor
 		{
 			if (effect == null)
 				throw new ArgumentNullException(nameof(effect));
-			Effects.Add(effect);
+
+			lock (SyncRoot)
+			{
+				Effects.Add(effect);
+			}
 		}
 
 		/// <see cref="IStore.AddMiddleware(IMiddleware)"/>
-		public async void AddMiddleware(IMiddleware middleware)
+		public void AddMiddleware(IMiddleware middleware)
 		{
-			Middlewares.Add(middleware);
-			ReversedMiddlewares.Insert(0, middleware);
-			// Initialize the middleware immediately if the store has already been initialized, otherwise this will be
-			// done the first time Dispatch is called
-			if (HasActivatedStore)
+			lock (SyncRoot)
 			{
-				await middleware.InitializeAsync(this);
-				middleware.AfterInitializeAllMiddlewares();
+				Middlewares.Add(middleware);
+				ReversedMiddlewares.Insert(0, middleware);
+				// Initialize the middleware immediately if the store has already been initialized, otherwise this will be
+				// done the first time Dispatch is called
+				if (HasActivatedStore)
+				{
+					middleware.InitializeAsync(this).Wait();
+					middleware.AfterInitializeAllMiddlewares();
+				}
 			}
 		}
 
 		/// <see cref="IStore.BeginInternalMiddlewareChange"/>
 		public IDisposable BeginInternalMiddlewareChange()
 		{
-			BeginMiddlewareChangeCount++;
-			IDisposable[] disposables = Middlewares
-				.Select(x => x.BeginInternalMiddlewareChange())
-				.ToArray();
-			return new DisposableCallback(() =>
+			lock (SyncRoot)
 			{
-				BeginMiddlewareChangeCount--;
-				if (BeginMiddlewareChangeCount == 0)
-					disposables.ToList().ForEach(x => x.Dispose());
-			});
+				BeginMiddlewareChangeCount++;
+				IDisposable[] disposables = Middlewares
+					.Select(x => x.BeginInternalMiddlewareChange())
+					.ToArray();
+
+				return new DisposableCallback(() => EndMiddlewareChange(disposables));
+			}
 		}
 
 		/// <see cref="IStore.Initialize"/>
@@ -160,6 +171,16 @@ namespace Blazor.Fluxor
 			};
 		}
 
+		private void EndMiddlewareChange(IDisposable[] disposables)
+		{
+			lock (SyncRoot)
+			{
+				BeginMiddlewareChangeCount--;
+				if (BeginMiddlewareChangeCount == 0)
+					disposables.ToList().ForEach(x => x.Dispose());
+			}
+		}
+
 		private void TriggerEffects(object action)
 		{
 			var effectsToTrigger = Effects.Where(x => x.ShouldReactToAction(action));
@@ -169,7 +190,7 @@ namespace Blazor.Fluxor
 
 		private async void InitializeMiddlewares()
 		{
-			foreach(IMiddleware middleware in Middlewares)
+			foreach (IMiddleware middleware in Middlewares)
 			{
 				await middleware.InitializeAsync(this);
 			}
@@ -192,34 +213,43 @@ namespace Blazor.Fluxor
 			if (HasActivatedStore)
 				return;
 
-			HasActivatedStore = true;
-			InitializeMiddlewares();
-			DequeueActions();
-			InitializedCompletionSource.SetResult(true);
+			lock (SyncRoot)
+			{
+				HasActivatedStore = true;
+				InitializeMiddlewares();
+				DequeueActions();
+				InitializedCompletionSource.SetResult(true);
+			}
 		}
 
 		private void DequeueActions()
 		{
-			while (QueuedActions.Any())
+			if (IsDispatching)
+				return;
+
+			IsDispatching = true;
+			try
 			{
-				// We want the next action but we won't dequeue it because we use
-				// a non-empty queue as an indication that a Dispatch() loop is already in progress
-				object nextActionToDequeue = QueuedActions.Peek();
-				// Only process the action if no middleware vetos it
-				if (Middlewares.All(x => x.MayDispatchAction(nextActionToDequeue)))
+				while (QueuedActions.TryDequeue(out object nextActionToProcess))
 				{
-					ExecuteMiddlewareBeforeDispatch(nextActionToDequeue);
+					// Only process the action if no middleware vetos it
+					if (Middlewares.All(x => x.MayDispatchAction(nextActionToProcess)))
+					{
+						ExecuteMiddlewareBeforeDispatch(nextActionToProcess);
 
-					// Notify all features of this action
-					foreach (var featureInstance in FeaturesByName.Values)
-						IFeatureReceiveDispatchNotificationFromStore(featureInstance, nextActionToDequeue);
+						// Notify all features of this action
+						foreach (var featureInstance in FeaturesByName.Values)
+							IFeatureReceiveDispatchNotificationFromStore(featureInstance, nextActionToProcess);
 
-					ExecuteMiddlewareAfterDispatch(nextActionToDequeue);
+						ExecuteMiddlewareAfterDispatch(nextActionToProcess);
 
-					TriggerEffects(nextActionToDequeue);
+						TriggerEffects(nextActionToProcess);
+					}
 				}
-				// Now remove the processed action from the queue so we can move on to the next (if any)
-				QueuedActions.Dequeue();
+			}
+			finally
+			{
+				IsDispatching = false;
 			}
 		}
 	}

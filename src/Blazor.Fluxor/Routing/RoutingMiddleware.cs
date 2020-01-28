@@ -27,7 +27,7 @@ namespace Blazor.Fluxor.Routing
 
 
 		/// <see cref="IMiddleware.InitializeAsync(IStore)"/>
-		public async override ValueTask InitializeAsync(IStore store)
+		public async override Task InitializeAsync(IStore store)
 		{
 			await base.InitializeAsync(store);
 			// If the URL changed before we initialized then dispatch an action

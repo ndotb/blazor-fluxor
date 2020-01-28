@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Blazor.Fluxor
@@ -21,7 +20,7 @@ namespace Blazor.Fluxor
 		/// the middleware is added to the store (if the store has already been initialised)
 		/// </summary>
 		/// <param name="store">A reference to the store</param>
-		ValueTask InitializeAsync(IStore store);
+		Task InitializeAsync(IStore store);
 
 		/// <summary>
 		/// Called exactly once by the store after <see cref="InitializeAsync(IStore)"/> has been

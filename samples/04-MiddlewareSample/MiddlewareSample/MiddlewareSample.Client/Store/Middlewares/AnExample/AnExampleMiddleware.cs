@@ -11,7 +11,7 @@ namespace MiddlewareSample.Client.Store.Middlewares.AnExample
 			return "alert('AnExampleMiddleware script inserted successfully');";
 		}
 
-		public override ValueTask InitializeAsync(IStore store) => base.InitializeAsync(store);
+		public override Task InitializeAsync(IStore store) => base.InitializeAsync(store);
 
 		public override void AfterInitializeAllMiddlewares()
 		{

@@ -25,10 +25,10 @@ namespace Blazor.Fluxor
 		public virtual string GetClientScripts() => null;
 
 		/// <see cref="IMiddleware.InitializeAsync(IStore)"/>
-		public virtual ValueTask InitializeAsync(IStore store)
+		public virtual Task InitializeAsync(IStore store)
 		{
 			Store = store;
-			return new ValueTask(Task.CompletedTask);
+			return Task.CompletedTask;
 		}
 
 		/// <see cref="IMiddleware.AfterInitializeAllMiddlewares"/>
