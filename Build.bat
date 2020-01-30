@@ -1,1 +1,1 @@
-dotnet build src -c Release
+dotnet build test\Blazor.Fluxor.UnitTests\Blazor.Fluxor.UnitTests.csproj -c Release
