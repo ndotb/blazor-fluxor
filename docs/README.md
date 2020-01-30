@@ -23,6 +23,9 @@ More sample projects will be added as the framework develops.
 
 ## What's new
 
+### New in 1.4.0
+- Made dispatching actions thread safe (#117)
+
 ### New in 1.3.2
 - Fixed bug #110 (Cannot use Redux Dev Tools on server side)
  
