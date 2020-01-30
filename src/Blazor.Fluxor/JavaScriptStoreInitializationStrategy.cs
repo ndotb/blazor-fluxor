@@ -59,6 +59,12 @@ namespace Blazor.Fluxor
 							// executing the script. We will try for up to 1 second before giving up.
 							lastError = err;
 						}
+						catch (TimeoutException err)
+						{
+							// TimeoutException means we cannot reach the client (usually server side Blazor)
+							// We are okay to try again until our hard fail time
+							lastError = err;
+						}
 						catch (Exception err)
 						{
 							throw new StoreInitializationException("Store initialization error", err);
