@@ -1,25 +1,29 @@
 # Blazor-Fluxor
 ![](./images/blazor-fluxor-logo.png)
 
-Blazor-Fluxor is a zero boilerplate Flux/Redux library for the new [Microsoft aspdotnet Blazor project].
+Blazor-Fluxor is a zero boilerplate Flux/Redux library for the new [Microsoft Asp.Net Blazor project][3].
 
+## Introduction
+If you are new to Fluxor, or to the Flux/Redux approach in general then [this YouTube video by Nick Chapsas][10] is an excellent introduction.
+
+## Goal
 The aim of Fluxor is to create a single-state store approach to front-end development in Blazor without the headaches typically associated with other implementations, such as the overwhelming amount of boiler-plate code required just to add a very basic feature.
 
 ## Installation
-You can download the latest release / pre-release NuGet packages from the [official Blazor-Fluxor nuget page].
+You can download the latest release / pre-release NuGet packages from the [official Blazor-Fluxor nuget page][1].
 
- - [Blazor Fluxor] [![NuGet version (Blazor.Fluxor)](https://img.shields.io/nuget/v/Blazor.Fluxor.svg?style=flat-square)](https://www.nuget.org/packages/Blazor.Fluxor/)
+ - [Blazor Fluxor][2] [![NuGet version (Blazor.Fluxor)](https://img.shields.io/nuget/v/Blazor.Fluxor.svg?style=flat-square)](https://www.nuget.org/packages/Blazor.Fluxor/)
 
 ## Getting started
-The easiest way to get started is to look at the [Sample projects]. They are numbered in an order recommended for learning Blazor-Fluxor. Each will have a `readme` file that explains how the sample was created.
+The easiest way to get started is to look at the [Sample projects][8]. They are numbered in an order recommended for learning Blazor-Fluxor. Each will have a `readme` file that explains how the sample was created.
 
 ### Sample projects
 More sample projects will be added as the framework develops.
-- [Counter sample] - Fluxorizes `Counter` page in the standard Visual Studio Blazor sample in order to show how to switch to a Redux/Flux pattern application using Fluxor.
-- [Effects sample] - Fluxorizes `FetchData` page in the standard Visual Studio Blazor sample in order to demonstrate asynchronous reactions to actions that are dispatched.
-- [Redux dev tools integration] - Demonstrates how to enable debugger integration for the [Redux dev tools] Chrome plugin.
-- [Custom Middleware] - Demonstrates how to create custom Middleware to intercept actions etc.
-- [Blazor Flight Finder] - A conversion of the official Blazor `Flight Finder` demo.
+- [Counter sample][4] - Fluxorizes `Counter` page in the standard Visual Studio Blazor sample in order to show how to switch to a Redux/Flux pattern application using Fluxor.
+- [Effects sample][5] - Fluxorizes `FetchData` page in the standard Visual Studio Blazor sample in order to demonstrate asynchronous reactions to actions that are dispatched.
+- [Redux dev tools integration][6] - Demonstrates how to enable debugger integration for the [Redux dev tools] Chrome plugin.
+- [Custom Middleware][7] - Demonstrates how to create custom Middleware to intercept actions etc.
+- [Blazor Flight Finder][9] - A conversion of the official Blazor `Flight Finder` demo.
 
 ## What's new
 
@@ -79,7 +83,7 @@ Issues fixed
 - Fixed bug that caused an error when the project contained an abstract class that implements a Fluxor interface
 
 ### New in 0.28.0
-- Added a StateChanged event to IFeature<T> and IState<T>
+- Added a StateChanged event to IFeature&lt;T&gt; and IState&lt;T&gt;
 
 ### New in 0.27.0
 - Update to Blazor preview 8
@@ -149,7 +153,7 @@ Issues fixed
 - Change versioning scheme to match the Blazor approach (increment minor version per release)
 - Make BrowserInterop an injected service
 - Ensure DisposableCallback can only be disposed once
-- Change Store.Features from IEnumerable<IFeature> to IReadonlyDictionary<string, Feature> for fast lookup and prevention of duplicate keys
+- Change Store.Features from IEnumerable&lt;IFeature&gt; to IReadonlyDictionary&lt;string, Feature&gt; for fast lookup and prevention of duplicate keys
 - Make Store.BeginInternalMiddlewareChange re-entrant
 - Fix NullReferenceException that could occur when Middleware returned null from IMiddleware.AfterDispatch
 
@@ -160,7 +164,7 @@ Issues fixed
 
 ### New in 0.0.10
 - Introduced IDispatcher for dispatching actions from Blazor components so that the whole IStore isn't required.
-- Introduced IState for providing feature state to Blazor components so that the entire IFeature<T> doesn't need to be referenced.
+- Introduced IState for providing feature state to Blazor components so that the entire IFeature&lt;T&gt; doesn't need to be referenced.
 
 ### New in 0.0.9
 - Renamed `Handle` to `HandleAsync` in effects
@@ -192,7 +196,7 @@ Issues fixed
 
 ### New in 0.0.3
 - Added side-effects for calling out to async routines such as HTTP requests
-- Added a sample application to the [Sample projects]
+- Added a sample application to the [Sample projects][8]
 
 ### New in 0.0.2
 - Automatic discovery of store, features, and reducers via dependency injection.
@@ -203,13 +207,13 @@ Issues fixed
 # Licence
 MIT
 
-   [Official Blazor-Fluxor nuget page]: <https://www.nuget.org/packages/Blazor.Fluxor>
-   [Blazor Fluxor]: <https://www.nuget.org/packages/Blazor.Fluxor>
-   [Microsoft aspdotnet blazor project]: <https://github.com/aspnet/Blazor>
-   [Counter sample]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/01-CounterSample>
-   [Effects sample]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/02-WeatherForecastSample>
-   [Redux dev tools integration]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/03-ReduxDevToolsIntegration>
-   [Custom Middleware]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/04-MiddlewareSample>
-   [Sample projects]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples>
-   [Blazor Flight Finder]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/05-FlightFinder>
-   [Full Stack Sample]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/06-FullStackSample>
+   [1]: <https://www.nuget.org/packages/Blazor.Fluxor>
+   [2]: <https://www.nuget.org/packages/Blazor.Fluxor>
+   [3]: <https://github.com/aspnet/Blazor>
+   [4]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/01-CounterSample>
+   [5]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/02-WeatherForecastSample>
+   [6]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/03-ReduxDevToolsIntegration>
+   [7]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/04-MiddlewareSample>
+   [8]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples>
+   [9]: <https://github.com/mrpmorris/blazor-fluxor/tree/master/samples/05-FlightFinder>
+   [10]: <https://www.youtube.com/watch?v=k_c-ErPaYa8>
