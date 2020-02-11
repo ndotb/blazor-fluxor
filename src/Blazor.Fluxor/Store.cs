@@ -54,10 +54,14 @@ namespace Blazor.Fluxor
 		{
 			if (feature == null)
 				throw new ArgumentNullException(nameof(feature));
-
-			lock (SyncRoot)
-			{
-				FeaturesByName.Add(feature.GetName(), feature);
+			foreach (string f in FeaturesByName.Keys) {
+				Console.WriteLine(f);
+			}
+			if (!FeaturesByName.ContainsKey(feature.GetName())) {
+				lock (SyncRoot)
+				{
+					FeaturesByName.Add(feature.GetName(), feature);
+				}
 			}
 		}
 
