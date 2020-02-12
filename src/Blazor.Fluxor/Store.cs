@@ -138,6 +138,13 @@ namespace Blazor.Fluxor
 			}
 		}
 
+
+		/// <summary>
+		/// A self-incrementing value for render frame sequencing
+		/// </summary>
+		private int Seq { get => _seq++; set => _seq = value; }
+		private int _seq = 0;
+
 		/// <see cref="IStore.Initialize"/>
 		public RenderFragment Initialize()
 		{
@@ -164,9 +171,22 @@ namespace Blazor.Fluxor
 				scriptBuilder.AppendLine("}");
 
 				string script = scriptBuilder.ToString();
-				renderer.OpenElement(1, "script");
-				renderer.AddAttribute(2, "id", "initializeFluxor");
-				renderer.AddMarkupContent(3, script);
+
+				// <div>
+				renderer.OpenElement(Seq, "div");
+				renderer.AddAttribute(Seq, "id", "fluxor-script-container");
+				renderer.AddAttribute(Seq, "style", "max-height:0 !important; max-width:0 !important; display: none !important");
+				renderer.AddAttribute(Seq, "aria-hidden", "true");
+
+				// -- <script>
+				renderer.OpenElement(Seq, "script");
+				renderer.AddAttribute(Seq, "id", "initializeFluxor");
+				renderer.AddMarkupContent(Seq, script);
+
+				// -- </script>
+				renderer.CloseElement();
+
+				// </div>
 				renderer.CloseElement();
 			};
 		}
