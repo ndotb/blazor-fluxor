@@ -33,10 +33,10 @@ namespace Blazor.Fluxor
 			remove { Feature.StateChanged -= value; }
 		}
 
-		/// <see cref="IState.Subscribe(ComponentBase)"/>
-		public void Subscribe(ComponentBase subscriber) => Feature.Subscribe(subscriber);
+		/// <see cref="IState.Subscribe(IHandleEvent)"/>
+		public void Subscribe(IHandleEvent subscriber) => Feature.Subscribe(subscriber);
 
-		/// <see cref="IState.Unsubscribe(ComponentBase)"/>
-		public void Unsubscribe(ComponentBase subscriber) => Feature.Unsubscribe(subscriber);
+		/// <see cref="IState.Unsubscribe(IHandleEvent)"/>
+		public void Unsubscribe(IHandleEvent subscriber) => Feature.Unsubscribe(subscriber);
 	}
 }

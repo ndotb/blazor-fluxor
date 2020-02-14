@@ -45,16 +45,29 @@ namespace Blazor.Fluxor
 		void ReceiveDispatchNotificationFromStore(object action);
 
 		/// <summary>
-		/// Registers a component to be re-rendered whenever the state changes
+		/// Registers a component to be re-rendered whenever the state changes, or notifies a non-rendering subscriber
 		/// </summary>
-		/// <param name="subscriber">The component that will have <see cref="ComponentBase.StateHasChanged"/> executed when the state changes</param>
-		void Subscribe(ComponentBase subscriber);
+		/// <param name="subscriber">
+		/// The component that will have <see cref="IHandleEvent.HandleEventAsync(EventCallbackWorkItem, object)"/>
+		/// executed when the state changes
+		/// </param>
+		/// <remarks>
+		/// <para>
+		/// <c>HandleEventAsync</c> is only passed an empty delegate, but always calls <see cref="ComponentBase.StateHasChanged"/>
+		/// in its own <c>Task</c> context.
+		/// </para>
+		/// </remarks>
+		/// </remarks>
+		void Subscribe(IHandleEvent subscriber);
 
 		/// <summary>
 		/// Stops a component from being re-rendered whenever the state changes
 		/// </summary>
-		/// <param name="subscriber">The component that has <see cref="ComponentBase.StateHasChanged"/> executed when the state changes</param>
-		void Unsubscribe(ComponentBase subscriber);
+		/// <param name="subscriber">
+		/// The component that has <see cref="IHandleEvent.HandleEventAsync(EventCallbackWorkItem, object)"/>
+		/// executed when the state changes
+		/// </param>
+		void Unsubscribe(IHandleEvent subscriber);
 	}
 
 	/// <summary>

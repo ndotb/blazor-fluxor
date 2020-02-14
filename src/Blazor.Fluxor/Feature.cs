@@ -33,9 +33,7 @@ namespace Blazor.Fluxor
 		/// </summary>
 		protected readonly List<IReducer<TState>> Reducers = new List<IReducer<TState>>();
 
-		private Func<ComponentBase, Action, Task> ComponentBaseInvokeAsync;
-		private Action<ComponentBase> ComponentBaseStateHasChanged;
-		private List<WeakReference<ComponentBase>> ObservingComponents = new List<WeakReference<ComponentBase>>();
+		private readonly List<WeakReference<IHandleEvent>> ObservingComponents = new List<WeakReference<IHandleEvent>>();
 
 		/// <summary>
 		/// Creates a new instance
@@ -43,22 +41,6 @@ namespace Blazor.Fluxor
 		public Feature()
 		{
 			State = GetInitialState();
-			MethodInfo invokeAsyncMethodInfo =
-				typeof(ComponentBase).GetMethod(
-					name: "InvokeAsync",
-					bindingAttr: BindingFlags.NonPublic | BindingFlags.Instance,
-					binder: null,
-					types: new[] { typeof(Action) },
-					modifiers: null);
-			ComponentBaseInvokeAsync = (Func<ComponentBase, Action, Task>)
-				Delegate.CreateDelegate(typeof(Func<ComponentBase, Action, Task>), invokeAsyncMethodInfo);
-
-			MethodInfo stateHasChangedMethodInfo =
-				typeof(ComponentBase).GetMethod(
-					name: "StateHasChanged",
-					bindingAttr: BindingFlags.NonPublic | BindingFlags.Instance);
-
-			ComponentBaseStateHasChanged = (Action<ComponentBase>)Delegate.CreateDelegate(typeof(Action<ComponentBase>), stateHasChangedMethodInfo);
 		}
 
 		private TState _State;
@@ -104,15 +86,15 @@ namespace Blazor.Fluxor
 			State = newState;
 		}
 
-		/// <see cref="IFeature.Subscribe(ComponentBase)"/>
-		public void Subscribe(ComponentBase subscriber)
+		/// <see cref="IFeature.Subscribe(IHandleEvent)"/>
+		public void Subscribe(IHandleEvent subscriber)
 		{
-			var subscriberReference = new WeakReference<ComponentBase>(subscriber);
+			var subscriberReference = new WeakReference<IHandleEvent>(subscriber);
 			ObservingComponents.Add(subscriberReference);
 		}
 
-		/// <see cref="IFeature.Unsubscribe(ComponentBase)"/>
-		public void Unsubscribe(ComponentBase subscriber)
+		/// <see cref="IFeature.Unsubscribe(IHandleEvent)"/>
+		public void Unsubscribe(IHandleEvent subscriber)
 		{
 			var subscriberReference = ObservingComponents.FirstOrDefault(wr => wr.TryGetTarget(out var target) && ReferenceEquals(target, subscriber));
 			if (subscriberReference != null)
@@ -121,39 +103,25 @@ namespace Blazor.Fluxor
 
 		private void TriggerStateChangedCallbacks(TState newState)
 		{
-			var subscribers = new List<ComponentBase>();
-			var callbacks = new List<Action>();
-			var newStateChangedCallbacks = new List<WeakReference<ComponentBase>>();
+			var subscribers = new List<IHandleEvent>();
+			var newStateChangedCallbacks = new List<WeakReference<IHandleEvent>>();
+
+			EventCallbackWorkItem dummyDelegate = new EventCallbackWorkItem();
 
 			// Keep only weak references that have not expired
 			foreach (var subscription in ObservingComponents)
 			{
-				subscription.TryGetTarget(out ComponentBase subscriber);
-				if (subscriber != null)
+				if (subscription.TryGetTarget(out IHandleEvent subscriber))
 				{
 					// Keep a reference to the subscribers to stop them being collected before we have finished
 					subscribers.Add(subscriber);
 
-					// Create a callback
-					Action invokeStateHasChanged = () => ComponentBaseStateHasChanged(subscriber);
-					Action invokeAsync = () => ComponentBaseInvokeAsync(subscriber, invokeStateHasChanged);
-
-					// Add the callback to a list to be executed
-					callbacks.Add(invokeAsync);
-
-					// Add this observer to the replacement list of active subscribers
-					newStateChangedCallbacks.Add(subscription);
+					subscriber.HandleEventAsync(dummyDelegate, null);
 				}
 			}
 
-			ObservingComponents = newStateChangedCallbacks;
-
-			// Execute the callbacks
-			callbacks.ForEach(callback => callback());
-
 			// Keep observers and callbacks alive until after we have called them
 			GC.KeepAlive(subscribers);
-			GC.KeepAlive(callbacks);
 
 			StateChanged?.Invoke(this, newState);
 		}
